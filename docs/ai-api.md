@@ -142,6 +142,12 @@ Category: `behavior` -- Shape: `COMMAND`
 Parameters:
 - `slot` (`NUMBER`), default `0`
 
+### `drop_selected_item`
+
+Category: `behavior` -- Shape: `COMMAND`
+
+Parameters: none
+
 ### `jump`
 
 Category: `behavior` -- Shape: `COMMAND`
@@ -447,7 +453,7 @@ Parameters:
 Category: `goal` -- Shape: `REPORTER`
 
 Parameters:
-- `blockpos` (`NUMBER`), default `0`; required
+- `blockpos` (`LIST`), default ``; required
 - `put_in` (`BOOLEAN`), default ``; required
 - `item` (`TEXT`), default `minecraft:stone`; required
 - `slot` (`NUMBER`), default `0`; required
@@ -610,6 +616,12 @@ Category: `sense` -- Shape: `REPORTER`
 
 Parameters:
 - `slot` (`NUMBER`), default `0`; required
+
+### `get_selected_slot`
+
+Category: `sense` -- Shape: `REPORTER`
+
+Parameters: none
 
 ### `time`
 
@@ -787,6 +799,26 @@ Parameters:
 Category: `sense` -- Shape: `REPORTER`
 
 Parameters: none
+
+### `is_running`
+
+Category: `sense` -- Shape: `BOOLEAN`
+
+Parameters: none
+
+### `is_crouching`
+
+Category: `sense` -- Shape: `BOOLEAN`
+
+Parameters: none
+
+### `is_in_tag`
+
+Category: `sense` -- Shape: `BOOLEAN`
+
+Parameters:
+- `target` (`TEXT`), default ``
+- `tag` (`TEXT`), default ``
 
 ### `set_variable`
 

@@ -280,6 +280,14 @@ Parameters:
 
 Description: Switches the ant's selected hotbar slot to the specified index (0-8). Applied instantly via the blackboard.
 
+### `drop_selected_item`
+
+Category: `behavior` -- Shape: `COMMAND`
+
+Parameters: none
+
+Description: Drops the item in the ant's selected hotbar slot. Applied instantly via the blackboard.
+
 ### `jump`
 
 Category: `behavior` -- Shape: `COMMAND`
@@ -880,6 +888,14 @@ Parameters:
 - `slot` (`NUMBER`), default `0`; required
 
 Description: Returns the number of items in the inventory slot (`0` through `8`).
+
+### `get_selected_slot`
+
+Category: `sense` -- Shape: `REPORTER`
+
+Parameters: none
+
+Description: Returns the current selected hotbar slot (`0` through `8`).
 
 ### `time`
 

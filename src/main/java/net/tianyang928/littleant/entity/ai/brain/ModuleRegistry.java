@@ -37,7 +37,7 @@ public final class ModuleRegistry {
         add("look_at_xyz", "behavior", BlockShape.COMMAND, blockPos("x", "y", "z"),List.of("look_at_xyz","x","()","y","()","z","()"));
         add("look_at_blockpos", "behavior", BlockShape.COMMAND, List.of(new InputDefinition("blockpos", ValueType.LIST, "")),List.of("look_at_blockpos","()"));
         //TODO: rotate (can't rotate a specific direction)
-        add("rotate", "behavior", BlockShape.COMMAND, List.of(new InputDefinition("angle", ValueType.NUMBER, "45")),List.of("rotate","()"));
+        //add("rotate", "behavior", BlockShape.COMMAND, List.of(new InputDefinition("angle", ValueType.NUMBER, "45")),List.of("rotate","()"));
         add("say", "behavior", BlockShape.COMMAND, List.of(new InputDefinition("message", ValueType.TEXT, "")),List.of("say","()"));
         add("switch_inventory_slot","behavior",BlockShape.COMMAND, List.of(new InputDefinition("slot", ValueType.NUMBER, "0")),List.of("switch_inventory_slot","()"));
         add("drop_selected_item", "behavior", BlockShape.COMMAND, List.of(), List.of("drop_selected_item"));
