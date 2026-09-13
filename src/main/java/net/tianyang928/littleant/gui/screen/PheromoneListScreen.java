@@ -310,6 +310,8 @@ public class PheromoneListScreen extends AbstractContainerScreen<PheromoneListMe
         final int index;
         String pheromoneId = "";
         int pheromoneAmount;
+        private int marqueeOffset;
+        private long lastMarqueeTick;
 
         public PheromoneStringWidget(Font font, int x, int y, int width, int height, int index, Component message) {
             super(x, y, width, height,message,font);
@@ -318,6 +320,36 @@ public class PheromoneListScreen extends AbstractContainerScreen<PheromoneListMe
 
         public int getIndex() {
             return this.index;
+        }
+
+        @Override
+        public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            Component message = this.getMessage();
+            int textWidth = PheromoneListScreen.this.font.width(message);
+            int width = this.getWidth();
+            if (textWidth <= width) {
+                super.renderWidget(graphics, mouseX, mouseY, partialTick);
+                return;
+            }
+
+            long tick = PheromoneListScreen.this.minecraft.level == null
+                    ? System.currentTimeMillis() / 50L
+                    : PheromoneListScreen.this.minecraft.level.getGameTime();
+            if (tick != this.lastMarqueeTick) {
+                this.lastMarqueeTick = tick;
+                if (tick % 3L == 0L) this.marqueeOffset++;
+            }
+            int cycle = textWidth + PheromoneListScreen.this.font.width("   ");
+            if (this.marqueeOffset >= cycle) this.marqueeOffset = 0;
+
+            int x = this.getX();
+            int y = this.getY() + (this.getHeight() - 9) / 2;
+            graphics.enableScissor(x, this.getY(), x + width, this.getY() + this.getHeight());
+            graphics.drawString(this.getFont(), message, x - this.marqueeOffset, y, this.getColor());
+            if (this.marqueeOffset > textWidth) {
+                graphics.drawString(this.getFont(), message, x + cycle - this.marqueeOffset, y, this.getColor());
+            }
+            graphics.disableScissor();
         }
     }
 

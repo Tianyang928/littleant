@@ -12,9 +12,6 @@ import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
-import net.minecraft.server.level.ServerLevel;
-import net.neoforged.neoforge.common.util.FakePlayer;
-import net.tianyang928.littleant.entity.ai.interaction.AntInteractionService;
 import net.tianyang928.littleant.entity.AntEntity;
 
 import javax.annotation.Nullable;
@@ -25,13 +22,12 @@ public class UseContainerGoal extends Goal {
     public enum Operation { PUT, TAKE }
 
     private static final double REACH_DISTANCE_SQR = 16.0D;
-    private static final int OPEN_ANIMATION_TICKS = 5;
+    private static final int OPEN_ANIMATION_TICKS = 3;
     private final AntEntity ant;
     @Nullable private BlockPos containerPos;
     @Nullable private Item item;
     @Nullable private Path path;
     @Nullable private Container openedContainer;
-    @Nullable private FakePlayer containerPlayer;
     private Operation operation = Operation.PUT;
     private int containerSlot;
     private int amount;
@@ -108,10 +104,10 @@ public class UseContainerGoal extends Goal {
         Container container = getContainer();
         if (hasValidRequest(container)) {
             if (this.openedContainer == null) {
-                // Containers without an opening animation implement these hooks as no-ops.
-                if (!(this.ant.level() instanceof ServerLevel)) return;
-                this.containerPlayer = AntInteractionService.createFakePlayer(this.ant);
-                container.startOpen(this.containerPlayer);
+                // FakePlayer is not retained by ContainerOpenersCounter's real
+                // player scan.  Open the lid through the block event instead of
+                // entering a counter that will later underflow on stopOpen.
+                setContainerAnimation(true);
                 this.openedContainer = container;
                 return;
             }
@@ -154,18 +150,28 @@ public class UseContainerGoal extends Goal {
 
     private void closeOpenedContainer() {
         if (this.openedContainer != null) {
-            if (this.containerPlayer != null) {
-                this.openedContainer.stopOpen(this.containerPlayer);
-                this.containerPlayer.stopUsingItem();
+            if (this.containerPos != null && this.ant.level().hasChunkAt(this.containerPos)) {
+                setContainerAnimation(false);
             }
             this.openedContainer = null;
-            this.containerPlayer = null;
         }
     }
 
     private boolean isReachable() {
         return this.containerPos != null && this.ant.distanceToSqr(
                 this.containerPos.getX() + 0.5D, this.containerPos.getY() - 0.5D, this.containerPos.getZ() + 0.5D) <= REACH_DISTANCE_SQR;
+    }
+
+    private void setContainerAnimation(boolean open) {
+        if (this.containerPos == null) return;
+        BlockState state = this.ant.level().getBlockState(this.containerPos);
+        this.ant.level().blockEvent(this.containerPos, state.getBlock(), 1, open ? 1 : 0);
+        if (state.getBlock() instanceof ChestBlock
+                && state.getValue(ChestBlock.TYPE) != ChestType.SINGLE) {
+            BlockPos otherPos = this.containerPos.relative(ChestBlock.getConnectedDirection(state));
+            BlockState otherState = this.ant.level().getBlockState(otherPos);
+            this.ant.level().blockEvent(otherPos, otherState.getBlock(), 1, open ? 1 : 0);
+        }
     }
 
     private void putIntoContainer(Container container) {

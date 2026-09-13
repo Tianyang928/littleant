@@ -21,7 +21,15 @@ public final class BrainFileRepository {
     private BrainFileRepository() {}
     private static final Path DIRECTORY = Minecraft.getInstance().gameDirectory.toPath().resolve("littleant_brains");
 
-    public record BrainFile(String name, boolean preset, Path path) {}
+    public record BrainFile(String name, boolean preset, Path path, ResourceLocation resourceId) {
+        private static BrainFile preset(ResourceLocation id) {
+            return new BrainFile(fileName(id.getPath()), true, null, id);
+        }
+
+        private static BrainFile custom(Path path) {
+            return new BrainFile(strip(path.getFileName().toString()), false, path, null);
+        }
+    }
 
     public static CompletableFuture<List<BrainFile>> list() {
         return CompletableFuture.supplyAsync(() -> {
@@ -29,9 +37,9 @@ public final class BrainFileRepository {
             List<BrainFile> result = new ArrayList<>();
             Minecraft.getInstance().getResourceManager().listResources("brain_presets", p -> p.getPath().endsWith(".json"))
                     .keySet().stream().sorted(Comparator.comparing(ResourceLocation::toString))
-                    .forEach(id -> result.add(new BrainFile(strip(id.getPath()), true, null)));
+                    .forEach(id -> result.add(BrainFile.preset(id)));
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(DIRECTORY, "*.json")) {
-                for (Path p : stream) result.add(new BrainFile(strip(p.getFileName().toString()), false, p));
+                for (Path p : stream) result.add(BrainFile.custom(p));
             } catch (IOException e) { LittleAnt.LOGGER.warn("Unable to list brain files", e); }
             result.sort(Comparator.comparing(BrainFile::name, String.CASE_INSENSITIVE_ORDER));
             return result;
@@ -43,8 +51,8 @@ public final class BrainFileRepository {
             try {
                 String source;
                 if (file.preset()) {
-                    var id = ResourceLocation.fromNamespaceAndPath(LittleAnt.MOD_ID, "brain_presets/" + file.name() + ".json");
-                    try (var in = Minecraft.getInstance().getResourceManager().getResourceOrThrow(id).open()) {
+                    if (file.resourceId() == null) throw new IllegalArgumentException("Preset has no resource id: " + file.name());
+                    try (var in = Minecraft.getInstance().getResourceManager().getResourceOrThrow(file.resourceId()).open()) {
                         source = new String(in.readAllBytes(), StandardCharsets.UTF_8);
                     }
                 } else source = Files.readString(file.path(), StandardCharsets.UTF_8);
@@ -71,4 +79,8 @@ public final class BrainFileRepository {
         return name == null ? "" : name.trim().replaceAll("[^a-zA-Z0-9._ -]", "_");
     }
     private static String strip(String name) { return name.endsWith(".json") ? name.substring(0, name.length() - 5) : name; }
+    private static String fileName(String resourcePath) {
+        int slash = resourcePath.lastIndexOf('/');
+        return strip(slash >= 0 ? resourcePath.substring(slash + 1) : resourcePath);
+    }
 }

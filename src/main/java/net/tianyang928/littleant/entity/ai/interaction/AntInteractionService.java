@@ -7,9 +7,16 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShieldItem;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.CommonHooks;
@@ -44,6 +51,30 @@ public final class AntInteractionService {
         ItemStack stack = ant.getItemInHand(hand);
         if (stack.isEmpty()) return InteractionResult.PASS;
 
+        // Food and potions finish correctly for any LivingEntity. Starting the
+        // use on a FakePlayer would keep the use timer on the wrong entity and
+        // copy the unchanged stack back before it could ever finish.
+        FoodProperties food = stack.get(DataComponents.FOOD);
+        if (food != null || stack.get(DataComponents.POTION_CONTENTS) != null) {
+            if (food != null && !food.canAlwaysEat() && !ant.getFoodData().needsFood()) {
+                return InteractionResult.FAIL;
+            }
+            ant.startUsingItem(hand);
+            return ant.isUsingItem() ? InteractionResult.CONSUME : InteractionResult.FAIL;
+        }
+
+        // ShieldItem is Equipable for off-hand placement, but the use goal means
+        // blocking with the held shield, not equipping it into Ant's empty offhand.
+        if (stack.getItem() instanceof ShieldItem) {
+            ant.startUsingItem(hand);
+            return ant.isUsingItem() ? InteractionResult.CONSUME : InteractionResult.FAIL;
+        }
+
+        Equipable equipable = Equipable.get(stack);
+        if (equipable != null) {
+            return equipFromHand(ant, hand, stack, equipable);
+        }
+
         // The task defines a bow use as one fully drawn shot. FakePlayer preserves
         // mod hooks, projectile creation, enchantments, ammo and durability behavior.
         if (stack.getItem() instanceof BowItem) {
@@ -77,12 +108,44 @@ public final class AntInteractionService {
             });
         }
 
-        // Shields, spyglasses and similar items only need LivingEntity's sustained
-        // use state. A later use call (or another goal) may stop/release that state.
+        // Shields, spyglasses and other sustained-use items must keep their state
+        // on Ant so UseItemGoal can tick and render it.
+        if (stack.getUseDuration(ant) > 0) {
+            ant.startUsingItem(hand);
+            return ant.isUsingItem() ? InteractionResult.CONSUME : InteractionResult.FAIL;
+        }
+
         // Instant-use and modded items need Player context; the full game-mode path
         // also fires NeoForge right-click events and handles transformed stacks.
         return withFakePlayer(ant, hand, stack,
                 fake -> fake.gameMode.useItem(fake, level, fake.getItemInHand(hand), hand));
+    }
+
+    private static InteractionResult equipFromHand(AntEntity ant, InteractionHand hand,
+                                                    ItemStack inHand, Equipable equipable) {
+        EquipmentSlot slot = equipable.getEquipmentSlot();
+        if (ant.getEquipmentSlotForItem(inHand) != slot) return InteractionResult.PASS;
+
+        ItemStack equipped = ant.getItemBySlot(slot);
+        if (EnchantmentHelper.has(equipped, EnchantmentEffectComponents.PREVENT_ARMOR_CHANGE)
+                || ItemStack.matches(inHand, equipped)) {
+            return InteractionResult.FAIL;
+        }
+
+        if (inHand.getCount() <= 1) {
+            ItemStack replacement = equipped.isEmpty() ? ItemStack.EMPTY : equipped.copyAndClear();
+            ant.setItemSlot(slot, inHand.copyAndClear());
+            ant.setItemInHand(hand, replacement);
+        } else {
+            ItemStack replacement = equipped.copyAndClear();
+            ant.setItemSlot(slot, inHand.split(1));
+            if (!replacement.isEmpty()) {
+                ItemStack remainder = ant.getInventory().addItem(replacement);
+                if (!remainder.isEmpty()) ant.spawnAtLocation(remainder);
+            }
+            ant.syncSelectedItemNow();
+        }
+        return InteractionResult.SUCCESS;
     }
 
     public static InteractionResult useBlockAsMob(AntEntity ant, BlockPos pos, Direction face,

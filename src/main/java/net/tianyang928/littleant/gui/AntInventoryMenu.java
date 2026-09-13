@@ -25,10 +25,11 @@ import net.tianyang928.littleant.entity.AntEntity;
  */
 public class AntInventoryMenu extends AbstractContainerMenu {
     private static final int ANT_SLOT_COUNT = AntEntity.INVENTORY_SIZE + 4;
-    private static final ResourceLocation EMPTY_HELMET_SLOT = ResourceLocation.withDefaultNamespace("container/slot/helmet");
-    private static final ResourceLocation EMPTY_CHESTPLATE_SLOT = ResourceLocation.withDefaultNamespace("container/slot/chestplate");
-    private static final ResourceLocation EMPTY_LEGGINGS_SLOT = ResourceLocation.withDefaultNamespace("container/slot/leggings");
-    private static final ResourceLocation EMPTY_BOOTS_SLOT = ResourceLocation.withDefaultNamespace("container/slot/boots");
+    // 1.21.1 moved armor placeholders from container/slot/* to item/empty_armor_slot_*.
+    private static final ResourceLocation EMPTY_HELMET_SLOT = InventoryMenu.EMPTY_ARMOR_SLOT_HELMET;
+    private static final ResourceLocation EMPTY_CHESTPLATE_SLOT = InventoryMenu.EMPTY_ARMOR_SLOT_CHESTPLATE;
+    private static final ResourceLocation EMPTY_LEGGINGS_SLOT = InventoryMenu.EMPTY_ARMOR_SLOT_LEGGINGS;
+    private static final ResourceLocation EMPTY_BOOTS_SLOT = InventoryMenu.EMPTY_ARMOR_SLOT_BOOTS;
 
     public final AntEntity ant;
 

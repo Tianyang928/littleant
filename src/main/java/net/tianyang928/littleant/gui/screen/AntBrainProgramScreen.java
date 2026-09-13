@@ -91,6 +91,19 @@ public class AntBrainProgramScreen extends AbstractContainerScreen<AntBrainProgr
     public void renderBg(GuiGraphics g, float p, int x, int y) {
         renderBlurredBackground(p);
         renderTransparentBackground(g);
+        rebuildLayouts();
+        drawCategories(g);
+        g.fill(0, 0, width, HEADER_HEIGHT, 0x661E2430);
+        drawScaledText(g,Component.translatable("menu.littleant.ant_brain_program"), 12, 10, 1.0f,0xFFFFFFFF, true);
+        drawPalette(g);
+        syncInputBoxes();
+        drawCanvas(g);
+        BlockRenderLayout preview = draggingLayout();
+        snapTarget = preview == null ? null : findSnapTarget(preview, dragX, dragY);
+        if (snapTarget != null) drawOutline(g, snapTarget.x(), snapTarget.y(), snapTarget.width(), snapTarget.height());
+        if (preview != null)
+            drawDraggingChain(g, snapTarget == null ? dragX : snapTarget.x(), snapTarget == null ? dragY : snapTarget.y());
+        if (filesMode) drawFileDialog(g);
     }
 
 
@@ -103,24 +116,6 @@ public class AntBrainProgramScreen extends AbstractContainerScreen<AntBrainProgr
             dragX = mx - dragOffsetX;
             dragY = my - dragOffsetY;
         }
-        rebuildLayouts();
-        drawCategories(g);
-        g.fill(0, 0, width, HEADER_HEIGHT, 0x661E2430);
-        drawScaledText(g,Component.translatable("menu.littleant.ant_brain_program"), 12, 10, 1.0f,0xFFFFFFFF, true);
-        drawPalette(g);
-
-        // Edit boxes remain Screen children for focus/input handling, but are
-        // rendered by drawBlock so their z-order matches their owning block.
-        syncInputBoxes();
-        drawCanvas(g);
-        BlockRenderLayout preview = draggingLayout();
-        snapTarget = preview == null ? null : findSnapTarget(preview, dragX, dragY);
-        if (snapTarget != null) drawOutline(g, snapTarget.x(), snapTarget.y(), snapTarget.width(), snapTarget.height());
-        if (preview != null)
-            drawDraggingChain(g, snapTarget == null ? dragX : snapTarget.x(), snapTarget == null ? dragY : snapTarget.y());
-
-        if (filesMode) drawFileDialog(g);
-
         super.render(g, mx, my, p);
         drawScaledText(g,Component.translatable("menu.littleant.show_debug_overlay"), width-65, HEADER_HEIGHT+5+8, 1.0f,debugOverlayVisible?0xFFFFFFFF:0x661E2430, true);
     }
@@ -1298,7 +1293,9 @@ public class AntBrainProgramScreen extends AbstractContainerScreen<AntBrainProgr
 
             int logicalMouseX = (int) (x + (mouseX - x) / TEXT_SCALE);
             int logicalMouseY = (int) (y + (mouseY - y) / TEXT_SCALE);
-            super.render(graphics, logicalMouseX, logicalMouseY, partialTick);
+            // AbstractWidget.render() is final in 1.21.1 and dispatches back to
+            // renderWidget(), so calling it here would recurse indefinitely.
+            super.renderWidget(graphics, logicalMouseX, logicalMouseY, partialTick);
 
             graphics.pose().popPose();
         }

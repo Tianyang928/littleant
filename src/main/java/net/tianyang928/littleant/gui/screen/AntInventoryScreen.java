@@ -15,6 +15,8 @@ public class AntInventoryScreen extends AbstractContainerScreen<AntInventoryMenu
 
     public AntInventoryScreen(AntInventoryMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
+        this.imageWidth = 256;
+        this.imageHeight = 256;
         this.inventoryLabelY = 79;
         this.inventoryLabelX = 82;
     }

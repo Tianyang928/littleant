@@ -42,6 +42,7 @@ import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.entity.ContainerOpenersCounter;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.neoforged.neoforge.common.NeoForgeMod;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -116,7 +117,7 @@ public class AntEntity extends PathfinderMob implements InventoryCarrier {
     public LivingEntity lastHurtBy = null;
     public long lastHurtTime = -1;
 
-    private double doubleFoodLevel = 0;
+    private double doubleFoodLevel = 20.0D;
 
     private static final EntityDataAccessor<String> skinNameAccessor =
             SynchedEntityData.defineId(
@@ -477,13 +478,14 @@ public class AntEntity extends PathfinderMob implements InventoryCarrier {
     @Override
     public void readAdditionalSaveData(CompoundTag input) {
         super.readAdditionalSaveData(input);
-        this.doubleFoodLevel = this.foodData.getFoodLevel();
         this.getEntityData().set(skinNameAccessor, input.getString("skin_name"));
         this.readInventoryFromTag(input,this.level().registryAccess());
         this.selectedSlot = input.getInt("selected_slot");
         this.selectedSlot = Mth.clamp(this.selectedSlot, 0, INVENTORY_SIZE - 1);
         this.syncSelectedItem();
         this.foodData.readAdditionalSaveData(input);
+        this.doubleFoodLevel = this.foodData.getFoodLevel();
+        this.lastTimePos = this.blockPosition();
         this.antScriptInterpreter.blackboard().readPermanentData(input);
         this.brainBlocks.clear();
         ListTag brainBlocks = input.getList("BrainBlocks", Tag.TAG_COMPOUND);
@@ -589,10 +591,36 @@ public class AntEntity extends PathfinderMob implements InventoryCarrier {
     /** FoodProperties feeds Player only; apply nutrition after the ant really finishes eating. */
     @Override
     protected void completeUsingItem() {
-        FoodProperties food = this.getUseItem().get(DataComponents.FOOD);
+        boolean potion = this.getUseItem().get(DataComponents.POTION_CONTENTS) != null;
+        InteractionHand usedHand = this.getUsedItemHand();
         super.completeUsingItem();
-        if (food != null) this.foodData.eat(food);
+        // PotionItem only consumes its stack for Player. Ant still receives the
+        // effects through vanilla, then performs the missing container exchange.
+        if (potion) {
+            ItemStack remaining = this.getItemInHand(usedHand);
+            remaining.shrink(1);
+            ItemStack bottle = new ItemStack(Items.GLASS_BOTTLE);
+            if (remaining.isEmpty()) {
+                this.setItemInHand(usedHand, bottle);
+            } else {
+                ItemStack remainder = this.inventory.addItem(bottle);
+                if (!remainder.isEmpty()) this.spawnAtLocation(remainder);
+            }
+        }
         this.syncSelectedItem();
+    }
+
+    @Override
+    public ItemStack eat(Level level, ItemStack stack, FoodProperties food) {
+        this.foodData.eat(food);
+        this.doubleFoodLevel = this.foodData.getFoodLevel();
+        ItemStack remaining = super.eat(level, stack, food);
+        if (food.usingConvertsTo().isEmpty()) return remaining;
+        ItemStack container = food.usingConvertsTo().get().copy();
+        if (remaining.isEmpty()) return container;
+        ItemStack remainder = this.inventory.addItem(container);
+        if (!remainder.isEmpty()) this.spawnAtLocation(remainder);
+        return remaining;
     }
 
     @Override
@@ -629,6 +657,7 @@ public class AntEntity extends PathfinderMob implements InventoryCarrier {
             FoodProperties foodProperties = itemStack.get(DataComponents.FOOD);
             if (foodProperties != null) {
                 this.foodData.eat(foodProperties);
+                this.doubleFoodLevel = this.foodData.getFoodLevel();
                 itemStack.shrink(1);
                 this.selectedSlot = slot;
                 this.syncSelectedItem();
@@ -740,10 +769,12 @@ public class AntEntity extends PathfinderMob implements InventoryCarrier {
         long currentTime = this.level().getGameTime();
         if(this.lastTimePos == null){
             this.lastTimePos = this.blockPosition();
+            this.doubleFoodLevel = this.foodData.getFoodLevel();
         }
         // 每1200个tick更新一次食物等级
         if(currentTime % 1200 == 0){
-            doubleFoodLevel -= Mth.sqrt((float)this.distanceToSqr(this.lastTimePos.getX(), this.lastTimePos.getY(), this.lastTimePos.getZ()))/100;
+            doubleFoodLevel -= Mth.sqrt((float)this.distanceToSqr(this.lastTimePos.getX(), this.lastTimePos.getY(), this.lastTimePos.getZ())) / 100.0D;
+            doubleFoodLevel = Mth.clamp(doubleFoodLevel, 0.0D, 20.0D);
             this.foodData.setFoodLevel((int)doubleFoodLevel);
             this.lastTimePos = this.blockPosition();
         }
@@ -764,22 +795,22 @@ public class AntEntity extends PathfinderMob implements InventoryCarrier {
     }
 
     private void updatePlayerPose() {
-//        if (forcedPose != null) {
-//            this.setPose(forcedPose);
-//            return;
-//        }
+        Pose desiredPose = this.getDesiredPose();
+        if (desiredPose == Pose.CROUCHING) {
+            // Unlike Player, Ant has no vanilla shift key state.  Its script flag
+            // is the authoritative crouch state, and setPose() synchronizes the
+            // pose and refreshes dimensions through Entity's data callback.
+            this.setPose(desiredPose);
+            return;
+        }
+        if (desiredPose == Pose.STANDING) {
+            if (this.canAntFitWithinBlocksAndEntitiesWhen(Pose.STANDING)) this.setPose(Pose.STANDING);
+            else if (this.canAntFitWithinBlocksAndEntitiesWhen(Pose.CROUCHING)) this.setPose(Pose.CROUCHING);
+            else this.setPose(Pose.SWIMMING);
+            return;
+        }
         if (this.canAntFitWithinBlocksAndEntitiesWhen(Pose.SWIMMING)) {
-            Pose desiredPose = this.getDesiredPose();
-            Pose actualPose;
-            if (this.isSpectator() || this.isPassenger() || this.canAntFitWithinBlocksAndEntitiesWhen(desiredPose)) {
-                actualPose = desiredPose;
-            } else if (this.canAntFitWithinBlocksAndEntitiesWhen(Pose.CROUCHING)) {
-                actualPose = Pose.CROUCHING;
-            } else {
-                actualPose = Pose.SWIMMING;
-            }
-
-            this.setPose(actualPose);
+            this.setPose(desiredPose);
         }
     }
 

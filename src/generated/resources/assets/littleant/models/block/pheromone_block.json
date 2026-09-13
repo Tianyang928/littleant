@@ -1,3 +1,5 @@
 {
-  "parent": "minecraft:block/air"
+  "textures": {
+    "particle": "littleant:item/pheromone_block"
+  }
 }
