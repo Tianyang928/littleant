@@ -22,7 +22,7 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("creative_mode_tab.littleant.ant_items_tab"))
                     .displayItems((displayParameters,output) -> {
                         output.accept(ModItems.ANT_SPAWN_EGG);
-                        output.accept(ModBlocks.ANT_CRAFTING_TABLE);
+                        //output.accept(ModBlocks.ANT_CRAFTING_TABLE);
                         output.accept(ModItems.PHEROMONE_BLOCK);
                     })
                     .build());

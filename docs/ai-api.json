@@ -257,6 +257,12 @@
       ]
     },
     {
+      "opcode": "drop_selected_item",
+      "category": "behavior",
+      "shape": "COMMAND",
+      "inputs": []
+    },
+    {
       "opcode": "jump",
       "category": "behavior",
       "shape": "COMMAND",
@@ -926,8 +932,8 @@
       "inputs": [
         {
           "name": "blockpos",
-          "type": "NUMBER",
-          "default": "0",
+          "type": "LIST",
+          "default": "",
           "required": true
         },
         {
@@ -1257,6 +1263,12 @@
           "required": true
         }
       ]
+    },
+    {
+      "opcode": "get_selected_slot",
+      "category": "sense",
+      "shape": "REPORTER",
+      "inputs": []
     },
     {
       "opcode": "time",
@@ -1615,6 +1627,37 @@
       "category": "sense",
       "shape": "REPORTER",
       "inputs": []
+    },
+    {
+      "opcode": "is_running",
+      "category": "sense",
+      "shape": "BOOLEAN",
+      "inputs": []
+    },
+    {
+      "opcode": "is_crouching",
+      "category": "sense",
+      "shape": "BOOLEAN",
+      "inputs": []
+    },
+    {
+      "opcode": "is_in_tag",
+      "category": "sense",
+      "shape": "BOOLEAN",
+      "inputs": [
+        {
+          "name": "target",
+          "type": "TEXT",
+          "default": "",
+          "required": false
+        },
+        {
+          "name": "tag",
+          "type": "TEXT",
+          "default": "",
+          "required": false
+        }
+      ]
     },
     {
       "opcode": "set_variable",

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/img/programming_gui.png" alt="title" width="300" />
+  <img src="src/main/resources/littleant.png" alt="title" width="300" />
 </p>
 <h1>LittleAnt</h1>
 <hr>

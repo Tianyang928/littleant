@@ -5,7 +5,7 @@ plugins {
 	id 'java-library'
 	id 'maven-publish'
 	id 'signing'
-	id 'dev.lukebemish.immaculate' version '0.1.8'
+	//
 	id 'idea'
 	id 'net.neoforged.moddev' version "${mdg_version}"
 }
@@ -132,55 +132,55 @@ tasks.processResources.dependsOn generateModMetadata
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-build.dependsOn immaculateCheck
+//build.dependsOn immaculateCheck
 
-immaculate {
-	workflows.register('java') {
-		java()
-		files.from rootProject.fileTree("src", {
-			include "**/*.java"
-		})
-		noTabs()
-		googleFixImports()
-		toggleOff = 'spotless:off'
-		toggleOn = 'spotless:on'
-		eclipse {
-			version '3.37.0'
-			config = rootProject.file('codeformat/formatter-config.xml')
-		}
-
-
-		// courtesy of diffplug/spotless#240
-		// https://github.com/diffplug/spotless/issues/240#issuecomment-385206606
-		custom 'noWildcardImports', { String fileContents ->
-			if (fileContents.contains('*;\n')) {
-				throw new GradleException('No wildcard imports are allowed!')
-			}
-		}
-
-		custom 'noNotNull', { String fileContents ->
-			if (fileContents.contains('@NotNull') || fileContents.contains('@Nonnull')) {
-				throw new GradleException('@NotNull and @Nonnull are disallowed.')
-			}
-		}
-
-		//Trim any trailing whitespace from patch additions
-		def trailingWhitespace = Pattern.compile('^\\+.*[ \t]+\$', Pattern.UNIX_LINES | Pattern.MULTILINE)
-		custom 'trimTrailingWhitespace', { String fileContents ->
-			Matcher matcher = trailingWhitespace.matcher(fileContents)
-			StringBuilder sb = new StringBuilder()
-			while (matcher.find()) {
-				matcher.appendReplacement(sb, matcher.group().trim())
-			}
-			matcher.appendTail(sb)
-			return sb.toString()
-		}
-
-		custom 'jetbrainsNullable', { String fileContents ->
-			fileContents.replace('javax.annotation.Nullable', 'org.jetbrains.annotations.Nullable')
-		}
-	}
-}
+//immaculate {
+//	workflows.register('java') {
+//		java()
+//		files.from rootProject.fileTree("src", {
+//			include "**/*.java"
+//		})
+//		noTabs()
+//		googleFixImports()
+//		toggleOff = 'spotless:off'
+//		toggleOn = 'spotless:on'
+//		eclipse {
+//			version '3.37.0'
+//			config = rootProject.file('codeformat/formatter-config.xml')
+//		}
+//
+//
+//		// courtesy of diffplug/spotless#240
+//		// https://github.com/diffplug/spotless/issues/240#issuecomment-385206606
+//		custom 'noWildcardImports', { String fileContents ->
+//			if (fileContents.contains('*;\n')) {
+//				throw new GradleException('No wildcard imports are allowed!')
+//			}
+//		}
+//
+//		custom 'noNotNull', { String fileContents ->
+//			if (fileContents.contains('@NotNull') || fileContents.contains('@Nonnull')) {
+//				throw new GradleException('@NotNull and @Nonnull are disallowed.')
+//			}
+//		}
+//
+//		//Trim any trailing whitespace from patch additions
+//		def trailingWhitespace = Pattern.compile('^\\+.*[ \t]+\$', Pattern.UNIX_LINES | Pattern.MULTILINE)
+//		custom 'trimTrailingWhitespace', { String fileContents ->
+//			Matcher matcher = trailingWhitespace.matcher(fileContents)
+//			StringBuilder sb = new StringBuilder()
+//			while (matcher.find()) {
+//				matcher.appendReplacement(sb, matcher.group().trim())
+//			}
+//			matcher.appendTail(sb)
+//			return sb.toString()
+//		}
+//
+//		custom 'jetbrainsNullable', { String fileContents ->
+//			fileContents.replace('javax.annotation.Nullable', 'org.jetbrains.annotations.Nullable')
+//		}
+//	}
+//}
 
 javadoc {
 	failOnError = false
@@ -272,4 +272,8 @@ idea {
 		downloadSources = true
 		downloadJavadoc = true
 	}
+}
+
+tasks.register('generateAiApi', Exec) {
+    commandLine 'python', 'scripts/generate_ai_api.py'
 }

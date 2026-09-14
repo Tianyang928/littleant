@@ -32,7 +32,7 @@ ordering="NONE"
 side="BOTH"
 [[dependencies.${mod_id}]]
 modId="jade"
-type="required"
+type="optional"
 versionRange="[${jade_version},)"
 ordering="NONE"
 side="BOTH"

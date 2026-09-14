@@ -187,6 +187,6 @@
   "command.littleant.code_to_module.assigned": "已分配 %s 只蚂蚁将代码转换为模块",
   "command.littleant.module_to_code.assigned": "已分配 %s 只蚂蚁将模块转换为代码",
   "tip.littleant.debug.f8_to_close": "按F8关闭",
-  "menu.littleant.show_debug_overlay": "显示调试",
+  "menu.littleant.show_debug_overlay": "显示调试界面",
   "antentity.littleant.food_level": "饥饿值：%d"
 }
